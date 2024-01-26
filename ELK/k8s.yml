@@ -1,0 +1,360 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f docker-compose.yml -o k8s
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: elasticsearch
+  name: elasticsearch
+spec:
+  ports:
+    - name: "9200"
+      port: 9200
+      targetPort: 9200
+    - name: "9300"
+      port: 9300
+      targetPort: 9300
+  selector:
+    io.kompose.service: elasticsearch
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f docker-compose.yml -o k8s
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: kibana
+  name: kibana
+spec:
+  ports:
+    - name: "5601"
+      port: 5601
+      targetPort: 5601
+  selector:
+    io.kompose.service: kibana
+status:
+  loadBalancer: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f docker-compose.yml -o k8s
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: logstash
+  name: logstash
+spec:
+  ports:
+    - name: "5044"
+      port: 5044
+      targetPort: 5044
+    - name: "9600"
+      port: 9600
+      targetPort: 9600
+  selector:
+    io.kompose.service: logstash
+status:
+  loadBalancer: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f docker-compose.yml -o k8s
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: elasticsearch
+  name: elasticsearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: elasticsearch
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f docker-compose.yml -o k8s
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/elk-elk: "true"
+        io.kompose.service: elasticsearch
+    spec:
+      containers:
+        - env:
+            - name: bootstrap.memory_lock
+              value: "true"
+            - name: cluster.name
+              value: elasticsearch
+            - name: discovery.type
+              value: single-node
+            - name: http.host
+              value: 0.0.0.0
+            - name: transport.host
+              value: 0.0.0.0
+            - name: xpack.monitoring.enabled
+              value: "false"
+            - name: xpack.security.enabled
+              value: "false"
+          image: elasticsearch:7.9.1
+          name: elasticsearch
+          ports:
+            - containerPort: 9200
+              hostPort: 9200
+              protocol: TCP
+            - containerPort: 9300
+              hostPort: 9300
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - mountPath: /usr/share/elasticsearch/data
+              name: test-data
+            - mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              name: elasticsearch-claim1
+      restartPolicy: Always
+      volumes:
+        - name: test-data
+          persistentVolumeClaim:
+            claimName: test-data
+        - name: elasticsearch-claim1
+          persistentVolumeClaim:
+            claimName: elasticsearch-claim1
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: test-data
+  name: test-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: elasticsearch-claim1
+  name: elasticsearch-claim1
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f docker-compose.yml -o k8s
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: kibana
+  name: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: kibana
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f docker-compose.yml -o k8s
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/elk-elk: "true"
+        io.kompose.service: kibana
+    spec:
+      containers:
+        - image: kibana:7.9.1
+          name: kibana
+          ports:
+            - containerPort: 5601
+              hostPort: 5601
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - mountPath: /usr/share/kibana/config/kibana.yml
+              name: kibana-claim0
+            - mountPath: /usr/share/kibana/data
+              name: kb-data
+      restartPolicy: Always
+      volumes:
+        - name: kibana-claim0
+          persistentVolumeClaim:
+            claimName: kibana-claim0
+        - name: kb-data
+          persistentVolumeClaim:
+            claimName: kb-data
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: kibana-claim0
+  name: kibana-claim0
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: kb-data
+  name: kb-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f docker-compose.yml -o k8s
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: logstash
+  name: logstash
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: logstash
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\ProgramData\chocolatey\lib\kubernetes-kompose\tools\kompose.exe convert -f docker-compose.yml -o k8s
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/elk-elk: "true"
+        io.kompose.service: logstash
+    spec:
+      containers:
+        - image: logstash:7.9.1
+          name: logstash
+          ports:
+            - containerPort: 5044
+              hostPort: 5044
+              protocol: TCP
+            - containerPort: 9600
+              hostPort: 9600
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - mountPath: /usr/share/logstash/pipeline/logstash.conf
+              name: logstash-claim0
+            - mountPath: /usr/share/logstash/config/logstash.yml
+              name: logstash-claim1
+            - mountPath: /usr/share/logstash/data
+              name: ls-data
+      restartPolicy: Always
+      volumes:
+        - name: logstash-claim0
+          persistentVolumeClaim:
+            claimName: logstash-claim0
+        - name: logstash-claim1
+          persistentVolumeClaim:
+            claimName: logstash-claim1
+        - name: ls-data
+          persistentVolumeClaim:
+            claimName: ls-data
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: logstash-claim0
+  name: logstash-claim0
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: logstash-claim1
+  name: logstash-claim1
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: ls-data
+  name: ls-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+

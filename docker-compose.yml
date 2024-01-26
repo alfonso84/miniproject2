@@ -1,0 +1,13 @@
+services:
+
+  api:
+    build: ./API
+    ports:
+      - 5000:5000
+      - 8000:8000
+    networks:
+      - elk
+
+networks:
+  elk:
+    driver: bridge
